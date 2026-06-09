@@ -1,6 +1,6 @@
 # StudyPlan
 
-A learning project: an Android study app for taking notes and reviewing them as
+Android study app for taking notes and reviewing them as
 flashcards with spaced repetition, so you revisit each card right before you'd
 forget it.
 
