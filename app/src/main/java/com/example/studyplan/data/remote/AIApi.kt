@@ -23,6 +23,4 @@ interface SummaryApi {
     @POST("api/summarize")
     suspend fun summarize(@Body request: SummaryRequestDto): SummaryResponseDto
 
-    @POST("api/generate-flashcards")
-    suspend fun generateFlashCards(@Body request: FlashCardsRequestDto)
 }

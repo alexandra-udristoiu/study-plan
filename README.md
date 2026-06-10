@@ -14,6 +14,12 @@ forget it.
   note and accept or discard the result.
 - **Offline-first** — notes and schedules are stored on-device with Room.
 
+## Screenshots
+
+| Notes | Flashcard | Study note |
+|:-----:|:---------:|:----------:|
+| <img src="screenshots/notes.PNG" width="220" alt="Notes list organised by topic"> | <img src="screenshots/flashcard.PNG" width="220" alt="Flashcard review session"> | <img src="screenshots/studynote.PNG" width="220" alt="An individual study note"> |
+
 ## Tech stack
 
 Kotlin · Jetpack Compose · Material 3 · Navigation-Compose · Coroutines · Room (KSP)
