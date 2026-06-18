@@ -11,6 +11,7 @@ class Sm2ScheduleFactory(private val gson: Gson = Gson()) : CardScheduleFactory 
     override fun fromPayload(payload: String): CardSchedule {
         val state = gson.fromJson(payload, Sm2State::class.java)
         return Sm2CardSchedule(
+            createdDate = LocalDate.ofEpochDay(state.createdEpochDay),
             lastReviewedDate = state.lastReviewedEpochDay?.let(LocalDate::ofEpochDay),
             interval = state.interval,
             successfulRepetitions = state.successfulRepetitions,

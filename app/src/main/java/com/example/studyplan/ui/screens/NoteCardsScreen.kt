@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -51,6 +53,7 @@ import com.example.studyplan.ui.theme.StudyPlanTheme
  * @param onUpdateCard invoked with an existing card carrying edited text.
  * @param onDeleteCard invoked with the card to remove.
  * @param onBack invoked when the user navigates back to the note.
+ * @param newCardIds ids of just-generated cards to badge as "new".
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +63,7 @@ fun NoteCardsScreen(
     onUpdateCard: (FlashCard) -> Unit,
     onDeleteCard: (FlashCard) -> Unit,
     onBack: () -> Unit,
+    newCardIds: Set<Int> = emptySet(),
 ) {
     // Closed = no dialog; New = add dialog; Edit = edit dialog for a specific card.
     var editor by remember { mutableStateOf<CardEditor>(CardEditor.Closed) }
@@ -105,6 +109,7 @@ fun NoteCardsScreen(
                 items(cards, key = { it.id }) { card ->
                     CardRow(
                         card = card,
+                        isNew = card.id in newCardIds,
                         onEdit = { editor = CardEditor.Edit(card) },
                         onDelete = { onDeleteCard(card) },
                     )
@@ -134,6 +139,7 @@ fun NoteCardsScreen(
 @Composable
 private fun CardRow(
     card: FlashCard,
+    isNew: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -143,6 +149,10 @@ private fun CardRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                if (isNew) {
+                    NewBadge()
+                    Spacer(Modifier.height(6.dp))
+                }
                 Text(
                     text = card.front,
                     style = MaterialTheme.typography.titleMedium,
@@ -170,6 +180,23 @@ private fun CardRow(
     }
 }
 
+/** Small "NEW" pill shown on freshly generated cards. */
+@Composable
+private fun NewBadge() {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary,
+        shape = RoundedCornerShape(4.dp),
+    ) {
+        Text(
+            text = "NEW",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun NoteCardsScreenPreview() {
@@ -184,6 +211,7 @@ private fun NoteCardsScreenPreview() {
             onUpdateCard = {},
             onDeleteCard = {},
             onBack = {},
+            newCardIds = setOf(2),
         )
     }
 }

@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Builds the Retrofit-backed [SummaryApi].
+ * Builds the Retrofit-backed [AIApi].
  *
  * The backend is a Spring Boot app listening on port 8080. From the Android
  * emulator, the host machine's localhost is reachable at 10.0.2.2 — not
@@ -27,12 +27,12 @@ object BackendApi {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    val summaryApi: SummaryApi by lazy {
+    val aiApi: AIApi by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(SummaryApi::class.java)
+            .create(AIApi::class.java)
     }
 }

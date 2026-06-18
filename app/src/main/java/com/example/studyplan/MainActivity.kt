@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     SummaryViewModel(container.summaryGenerator)
                 }
                 val flashCardsViewModel: FlashCardsViewModel = viewModel {
-                    FlashCardsViewModel(container.flashCardRepository)
+                    FlashCardsViewModel(container.flashCardRepository, container.flashCardsGenerator)
                 }
                 AppNavHost(
                     navController = navController,

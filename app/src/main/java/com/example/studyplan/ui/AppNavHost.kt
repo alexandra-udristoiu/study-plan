@@ -82,7 +82,15 @@ fun AppNavHost(
                 onEditClick = { note -> navController.navigate(Screen.EditNote.createRoute(note.id)) },
                 onBack = { navController.popBackStack() },
                 onGenerateSummary = { note -> navController.navigate(Screen.ReviewSummary.createRoute(note.id)) },
-                onManageCards = { note -> navController.navigate(Screen.NoteCards.createRoute(note.id)) }
+                onGenerateFlashcards = { note ->
+                    flashCardsViewModel.generateCards(note) {
+                        navController.navigate(Screen.NoteCards.createRoute(note.id))
+                    }
+                },
+                onManageCards = { note -> navController.navigate(Screen.NoteCards.createRoute(note.id)) },
+                isGeneratingFlashcards = flashCardsViewModel.isGenerating,
+                flashcardError = flashCardsViewModel.generationError,
+                onFlashcardErrorShown = { flashCardsViewModel.clearGenerationError() }
             )
         }
 
@@ -100,7 +108,11 @@ fun AppNavHost(
                 onAddCard = { front, back -> flashCardsViewModel.addCard(noteId, front, back) },
                 onUpdateCard = { card -> flashCardsViewModel.updateCard(card) },
                 onDeleteCard = { card -> flashCardsViewModel.deleteCard(card) },
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    flashCardsViewModel.clearNewCardIds()
+                    navController.popBackStack()
+                },
+                newCardIds = flashCardsViewModel.newCardIds
             )
         }
 

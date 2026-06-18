@@ -5,6 +5,8 @@ import com.example.studyplan.data.FlashCardRepository
 import com.example.studyplan.data.NoteRepository
 import com.example.studyplan.data.db.StudyPlanDatabase
 import com.example.studyplan.data.remote.BackendApi
+import com.example.studyplan.domain.flashcard.AIFlashCardsGenerator
+import com.example.studyplan.domain.flashcard.FlashCardsGenerator
 import com.example.studyplan.domain.flashcard.Sm2ScheduleFactory
 import com.example.studyplan.domain.summary.AISummaryGenerator
 import com.example.studyplan.domain.summary.SummaryGenerator
@@ -28,6 +30,10 @@ class AppContainer(context: Context) {
     }
 
     val summaryGenerator: SummaryGenerator by lazy {
-        AISummaryGenerator(BackendApi.summaryApi)
+        AISummaryGenerator(BackendApi.aiApi)
+    }
+
+    val flashCardsGenerator: FlashCardsGenerator by lazy {
+        AIFlashCardsGenerator(BackendApi.aiApi, Sm2ScheduleFactory())
     }
 }

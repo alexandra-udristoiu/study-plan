@@ -20,7 +20,8 @@ interface FlashCardDao {
     @Query("SELECT * FROM flashcards WHERE noteId = :noteId ORDER BY id")
     suspend fun getFlashCardsForNote(noteId: Int): List<FlashCardEntity>
 
-    // New cards (due IS NULL) are due immediately; reviewed cards are due when due <= today.
+    // A card is due when due <= today (overdue cards from past days are included).
+    // The IS NULL branch only covers legacy rows written before due was always set.
     @Query("SELECT * FROM flashcards WHERE due IS NULL OR due <= :today ORDER BY id")
     suspend fun getDueFlashCards(today: LocalDate): List<FlashCardEntity>
 }
