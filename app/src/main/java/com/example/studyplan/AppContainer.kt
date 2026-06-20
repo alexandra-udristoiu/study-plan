@@ -4,6 +4,8 @@ import android.content.Context
 import com.example.studyplan.data.FlashCardRepository
 import com.example.studyplan.data.NoteRepository
 import com.example.studyplan.data.db.StudyPlanDatabase
+import com.example.studyplan.data.pdf.BackendPdfTextExtractor
+import com.example.studyplan.data.pdf.PdfTextExtractor
 import com.example.studyplan.data.remote.BackendApi
 import com.example.studyplan.domain.flashcard.AIFlashCardsGenerator
 import com.example.studyplan.domain.flashcard.FlashCardsGenerator
@@ -21,6 +23,9 @@ class AppContainer(context: Context) {
 
     private val database = StudyPlanDatabase.getInstance(context)
 
+    // Held so the PDF extractor can read picked file Uris via the resolver.
+    private val contentResolver = context.contentResolver
+
     val noteRepository: NoteRepository by lazy {
         NoteRepository(database.noteDao())
     }
@@ -35,5 +40,9 @@ class AppContainer(context: Context) {
 
     val flashCardsGenerator: FlashCardsGenerator by lazy {
         AIFlashCardsGenerator(BackendApi.aiApi, Sm2ScheduleFactory())
+    }
+
+    val pdfTextExtractor: PdfTextExtractor by lazy {
+        BackendPdfTextExtractor(contentResolver, BackendApi.pdfApi)
     }
 }

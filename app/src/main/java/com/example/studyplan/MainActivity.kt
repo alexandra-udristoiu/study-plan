@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.studyplan.ui.AppNavHost
 import com.example.studyplan.ui.FlashCardsViewModel
 import com.example.studyplan.ui.NoteViewModel
+import com.example.studyplan.ui.PdfAttachmentViewModel
 import com.example.studyplan.ui.SummaryViewModel
 import com.example.studyplan.ui.theme.StudyPlanTheme
 
@@ -31,11 +32,15 @@ class MainActivity : ComponentActivity() {
                 val flashCardsViewModel: FlashCardsViewModel = viewModel {
                     FlashCardsViewModel(container.flashCardRepository, container.flashCardsGenerator)
                 }
+                val pdfAttachmentViewModel: PdfAttachmentViewModel = viewModel {
+                    PdfAttachmentViewModel(container.pdfTextExtractor)
+                }
                 AppNavHost(
                     navController = navController,
                     noteViewModel = noteViewModel,
                     summaryViewModel = summaryViewModel,
                     flashCardsViewModel = flashCardsViewModel,
+                    pdfAttachmentViewModel = pdfAttachmentViewModel,
                 )
             }
         }

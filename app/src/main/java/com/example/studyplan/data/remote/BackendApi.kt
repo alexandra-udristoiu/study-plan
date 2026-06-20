@@ -27,12 +27,15 @@ object BackendApi {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    val aiApi: AIApi by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(AIApi::class.java)
     }
+
+    val aiApi: AIApi by lazy { retrofit.create(AIApi::class.java) }
+
+    val pdfApi: PdfApi by lazy { retrofit.create(PdfApi::class.java) }
 }

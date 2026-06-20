@@ -1,4 +1,4 @@
-# StudyPlan
+# StudyPlan — Android notes & spaced-repetition flashcard app
 
 Android study app for taking notes and reviewing them as
 flashcards with spaced repetition, so you revisit each card right before you'd
@@ -8,6 +8,10 @@ forget it.
 
 - **Notes** organised by topic — create, edit, filter, and browse.
 - **Flashcards** generated from a note and reviewed in focused sessions.
+- **AI flashcard generation** *(requires the companion backend)* — auto-generate
+  flashcards from a note's title, summary, and content.
+- **PDF text import** *(requires the companion backend)* — pick a PDF and pull its
+  extracted text straight into a note's content.
 - **Spaced repetition (SM-2)** — cards are scheduled with the SuperMemo-2
   algorithm: easy cards reappear less often, hard ones come back sooner.
 - **AI summaries** *(optional, requires the companion backend)* — summarise a
@@ -49,13 +53,14 @@ cd StudyPlan
 ./gradlew installDebug   # or open in Android Studio and Run
 ```
 
-The AI-summary feature calls a small companion backend (`POST /api/summarize`).
-Without it, the rest of the app works fully offline.
+The AI and PDF features call a small companion backend (`/api/summarize`,
+`/api/generate-flashcard`, `/api/extract-pdf`). Without it, the rest of the app —
+notes, manual flashcards, and spaced-repetition review — works fully offline.
 
 ## Roadmap
 
-- [ ] **AI flashcard generation & PDF import** — upload a PDF, extract its text, and
-  auto-generate flashcards (and notes) from the content.
+- [x] **AI flashcard generation** — auto-generate flashcards from a note.
+- [x] **PDF text import** — pick a PDF and pull its extracted text into a note.
 - [ ] Single immutable `UiState` exposed via `StateFlow` + `collectAsStateWithLifecycle()`.
 - [ ] Reactive data layer — Room `Flow` → repository → `stateIn`.
 - [ ] Migrate manual DI to Hilt.

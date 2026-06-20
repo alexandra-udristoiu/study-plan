@@ -20,6 +20,7 @@ fun AppNavHost(
     noteViewModel: NoteViewModel,
     summaryViewModel: SummaryViewModel,
     flashCardsViewModel: FlashCardsViewModel,
+    pdfAttachmentViewModel: PdfAttachmentViewModel,
 ) {
     NavHost(
         navController = navController,
@@ -53,7 +54,13 @@ fun AppNavHost(
                     noteViewModel.addNote(note.title, note.topicName, note.content, note.summary)
                     navController.popBackStack()
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onPdfPicked = { uri -> pdfAttachmentViewModel.extract(uri) },
+                extractedPdfText = pdfAttachmentViewModel.content,
+                onExtractedTextConsumed = { pdfAttachmentViewModel.clear() },
+                isExtractingPdf = pdfAttachmentViewModel.isGenerating,
+                pdfError = pdfAttachmentViewModel.error,
+                onPdfErrorShown = { pdfAttachmentViewModel.clearError() }
             )
         }
         composable(
@@ -68,7 +75,13 @@ fun AppNavHost(
                     noteViewModel.updateNote(updated)
                     navController.popBackStack()
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onPdfPicked = { uri -> pdfAttachmentViewModel.extract(uri) },
+                extractedPdfText = pdfAttachmentViewModel.content,
+                onExtractedTextConsumed = { pdfAttachmentViewModel.clear() },
+                isExtractingPdf = pdfAttachmentViewModel.isGenerating,
+                pdfError = pdfAttachmentViewModel.error,
+                onPdfErrorShown = { pdfAttachmentViewModel.clearError() }
             )
         }
         composable(
