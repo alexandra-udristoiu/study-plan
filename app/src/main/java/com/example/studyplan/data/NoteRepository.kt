@@ -2,18 +2,21 @@ package com.example.studyplan.data
 
 import com.example.studyplan.data.db.NoteDao
 import com.example.studyplan.data.db.toStudyNote
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class NoteRepository(private val dao: NoteDao) {
 
-    suspend fun getNotes(): List<StudyNote> =
-        dao.getAllNotes().map { it.toStudyNote() }
+    /** Emits the full notes list and re-emits on every change to the table. */
+    fun observeNotes(): Flow<List<StudyNote>> =
+        dao.observeAllNotes().map { entities -> entities.map { it.toStudyNote() } }
 
     suspend fun addNote(title: String, topicName: String, content: String, summary: String) {
         dao.insertNote(StudyNote(0, title, topicName, content, summary).toNoteEntity())
     }
 
-    suspend fun deleteNote(note: StudyNote) {
-        dao.deleteNote(note.toNoteEntity())
+    suspend fun deleteNote(noteId: Int) {
+        dao.deleteNoteById(noteId)
     }
 
     suspend fun updateNote(note: StudyNote) {

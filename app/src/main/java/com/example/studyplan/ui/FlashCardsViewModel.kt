@@ -1,8 +1,5 @@
 package com.example.studyplan.ui
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyplan.data.FlashCard
@@ -11,51 +8,86 @@ import com.example.studyplan.data.StudyNote
 import com.example.studyplan.domain.flashcard.FlashCardsGenerationException
 import com.example.studyplan.domain.flashcard.FlashCardsGenerator
 import com.example.studyplan.domain.flashcard.Rating
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+
+/**
+ * Immutable snapshot shared by the flashcard screens.
+ *
+ * - [dueCards] are the cards due for review. Loaded once; each action patches it.
+ * - [cardsForNote] are the cards for the note open in NoteDetailScreen, reloaded per note.
+ * - [isGenerating] is true while an AI generation request is in flight.
+ * - [generationError] is non-null when the last generation attempt failed.
+ * - [newCardIds] are the ids from the most recent generation, so the cards screen
+ *   can badge them as "new".
+ */
+data class FlashCardsUiState(
+    val dueCards: List<FlashCard> = emptyList(),
+    val cardsForNote: List<FlashCard> = emptyList(),
+    val isGenerating: Boolean = false,
+    val generationError: String? = null,
+    val newCardIds: Set<Int> = emptySet(),
+)
 
 class FlashCardsViewModel(
     private val repository: FlashCardRepository,
     private val flashCardsGenerator: FlashCardsGenerator,
 ) : ViewModel() {
 
-    // The cards due for review. Loaded once; each action below patches it
-    // instead of re-querying.
-    var dueCards by mutableStateOf<List<FlashCard>>(emptyList())
-        private set
+    // The review-session queue. Deliberately in-memory session state, not a DB
+    // projection: reviewCard drops a card from the queue (and re-queues it later
+    // this session) without persisting a new due date, so a reactive query can't
+    // express it. Loaded once; patched by the actions below.
+    private val dueCards = MutableStateFlow<List<FlashCard>>(emptyList())
 
-    // The cards belonging to the note currently open in NoteDetailScreen.
-    // Reloaded per note; add/update/delete patch it in memory.
-    var cardsForNote by mutableStateOf<List<FlashCard>>(emptyList())
-        private set
+    // Transient generation/UI state, patched directly.
+    private val isGenerating = MutableStateFlow(false)
+    private val generationError = MutableStateFlow<String?>(null)
+    private val newCardIds = MutableStateFlow<Set<Int>>(emptySet())
 
-    // True while an AI generation request is in flight (for showing a spinner).
-    var isGenerating by mutableStateOf(false)
-        private set
+    // The note whose cards the management screen is showing (null = none open).
+    private val currentNoteId = MutableStateFlow<Int?>(null)
 
-    // Non-null when the last generation attempt failed; holds a message to show.
-    var generationError by mutableStateOf<String?>(null)
-        private set
+    // Cards for the open note, straight off Room — re-emits on every change, so
+    // add/update/delete no longer patch this list by hand. onStart clears the
+    // previous note's cards immediately so they don't show for a frame while loading.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val cardsForNote: Flow<List<FlashCard>> = currentNoteId.flatMapLatest { noteId ->
+        if (noteId == null) flowOf(emptyList())
+        else repository.observeCardsForNote(noteId).onStart { emit(emptyList()) }
+    }
 
-    // Ids of the cards from the most recent generation, so the cards screen can
-    // badge them as "new". In-memory only; keyed by id so it still matches after
-    // the cards screen re-queries the DB on open. Cleared when leaving the screen.
-    var newCardIds by mutableStateOf<Set<Int>>(emptySet())
-        private set
+    val uiState: StateFlow<FlashCardsUiState> = combine(
+        dueCards, cardsForNote, isGenerating, generationError, newCardIds,
+    ) { due, cards, generating, error, newIds ->
+        FlashCardsUiState(
+            dueCards = due,
+            cardsForNote = cards,
+            isGenerating = generating,
+            generationError = error,
+            newCardIds = newIds,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FlashCardsUiState())
 
     init {
         viewModelScope.launch {
-            dueCards = repository.getDueCards()
+            dueCards.value = repository.getDueCards()
         }
     }
 
-    /** Loads the cards for [noteId] into [cardsForNote] when the cards screen opens. */
+    /** Points the reactive cards flow at [noteId] when the cards screen opens. */
     fun loadCardsForNote(noteId: Int) {
-        // Drop the previous note's cards so they don't show for a frame while loading.
-        cardsForNote = emptyList()
-        viewModelScope.launch {
-            cardsForNote = repository.getCardsForNote(noteId)
-        }
+        currentNoteId.value = noteId
     }
 
     fun addCard(noteId: Int, front: String, back: String) {
@@ -71,56 +103,55 @@ class FlashCardsViewModel(
      */
     fun generateCards(note: StudyNote, onGenerated: () -> Unit = {}) {
         viewModelScope.launch {
-            isGenerating = true
-            generationError = null
-            newCardIds = emptySet()
+            isGenerating.value = true
+            generationError.value = null
+            newCardIds.value = emptySet()
             try {
                 val generated = flashCardsGenerator.generateFlashCards(note)
                 // addCard assigns a fresh schedule and the real id, so we
                 // persist front/back rather than the unsaved generated card.
                 val saved = generated.map { persistNewCard(note.id, it.front, it.back) }
-                newCardIds = saved.map { it.id }.toSet()
+                newCardIds.value = saved.map { it.id }.toSet()
                 onGenerated()
             } catch (e: FlashCardsGenerationException) {
-                generationError = e.message ?: "Failed to generate flashcards."
+                generationError.value = e.message ?: "Failed to generate flashcards."
             } finally {
-                isGenerating = false
+                isGenerating.value = false
             }
         }
     }
 
     /** Clears the "new" badges once the user leaves the cards screen. */
     fun clearNewCardIds() {
-        newCardIds = emptySet()
+        newCardIds.value = emptySet()
     }
 
-    /** Inserts a new card, appends it to both in-memory lists, and returns it. */
+    /**
+     * Inserts a new card and returns it. The cards-for-note list updates itself via
+     * the Flow; we still patch the in-memory due queue, since new cards are due now.
+     */
     private suspend fun persistNewCard(noteId: Int, front: String, back: String): FlashCard {
-        // A new card has no review date yet, so it's due immediately.
         val card = repository.addCard(noteId, front, back)
-        dueCards = dueCards + card
-        cardsForNote = cardsForNote + card
+        dueCards.value = dueCards.value + card
         return card
     }
 
     /** Clears any generation error after the UI has shown it. */
     fun clearGenerationError() {
-        generationError = null
+        generationError.value = null
     }
 
     fun updateCard(card: FlashCard) {
         viewModelScope.launch {
             repository.updateCard(card)
-            dueCards = dueCards.map { if (it.id == card.id) card else it }
-            cardsForNote = cardsForNote.map { if (it.id == card.id) card else it }
+            dueCards.value = dueCards.value.map { if (it.id == card.id) card else it }
         }
     }
 
     fun deleteCard(card: FlashCard) {
         viewModelScope.launch {
             repository.deleteCard(card)
-            dueCards = dueCards.filterNot { it.id == card.id }
-            cardsForNote = cardsForNote.filterNot { it.id == card.id }
+            dueCards.value = dueCards.value.filterNot { it.id == card.id }
         }
     }
 
@@ -129,11 +160,9 @@ class FlashCardsViewModel(
             val due = card.schedule.review(rating)
             repository.updateCard(card)
             val stillDueToday = !due.isAfter(LocalDate.now())
-            dueCards = dueCards.filterNot { it.id == card.id }
-            if (stillDueToday) {
-                // Re-show later this session instead of immediately.
-                dueCards = dueCards + card
-            }
+            val remaining = dueCards.value.filterNot { it.id == card.id }
+            // Re-show later this session instead of immediately when still due today.
+            dueCards.value = if (stillDueToday) remaining + card else remaining
         }
     }
 }

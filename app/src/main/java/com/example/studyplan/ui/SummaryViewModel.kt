@@ -1,14 +1,23 @@
 package com.example.studyplan.ui
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyplan.data.StudyNote
 import com.example.studyplan.domain.summary.SummaryGenerationException
 import com.example.studyplan.domain.summary.SummaryGenerator
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** Immutable snapshot of the summary-review screen. */
+data class SummaryUiState(
+    val generatedSummary: String? = null,
+    val isGenerating: Boolean = false,
+    // Non-null when the last generation attempt failed; holds a message to show.
+    val error: String? = null,
+)
 
 /**
  * Owns AI-summary generation only. Saving an accepted summary onto a note is a
@@ -18,33 +27,24 @@ class SummaryViewModel(
     private val summaryGenerator: SummaryGenerator,
 ) : ViewModel() {
 
-    var generatedSummary by mutableStateOf<String?>(null)
-        private set
-
-    var isGenerating by mutableStateOf(false)
-        private set
-
-    // Non-null when the last generation attempt failed; holds a message to show.
-    var error by mutableStateOf<String?>(null)
-        private set
+    private val _uiState = MutableStateFlow(SummaryUiState())
+    val uiState: StateFlow<SummaryUiState> = _uiState.asStateFlow()
 
     fun generate(note: StudyNote) {
         viewModelScope.launch {
-            isGenerating = true
-            error = null
-            generatedSummary = null
+            _uiState.update { it.copy(isGenerating = true, error = null, generatedSummary = null) }
             try {
-                generatedSummary = summaryGenerator.generateSummary(note)
+                val summary = summaryGenerator.generateSummary(note)
+                _uiState.update { it.copy(generatedSummary = summary) }
             } catch (e: SummaryGenerationException) {
-                error = e.message ?: "Failed to generate a summary."
+                _uiState.update { it.copy(error = e.message ?: "Failed to generate a summary.") }
             } finally {
-                isGenerating = false
+                _uiState.update { it.copy(isGenerating = false) }
             }
         }
     }
 
     fun clear() {
-        generatedSummary = null
-        error = null
+        _uiState.update { it.copy(generatedSummary = null, error = null) }
     }
 }

@@ -2,6 +2,8 @@ package com.example.studyplan.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,10 +29,11 @@ fun AppNavHost(
         startDestination = Screen.NoteList.route
     ) {
         composable(Screen.NoteList.route) {
+            val notesUiState by noteViewModel.uiState.collectAsStateWithLifecycle()
             NoteListScreen(
-                notes = noteViewModel.notes,
-                topics = noteViewModel.topics,
-                selectedTopic = noteViewModel.selectedTopic,
+                notes = notesUiState.notes,
+                topics = notesUiState.topics,
+                selectedTopic = notesUiState.selectedTopic,
                 onTopicSelected = { topic -> noteViewModel.selectTopic(topic) },
                 onAddClick = { navController.navigate(Screen.AddNote.route) },
                 onReviewClick = { navController.navigate(Screen.DueFlashcards.route) },
@@ -40,14 +43,16 @@ fun AppNavHost(
         }
 
         composable(Screen.DueFlashcards.route) {
+            val flashCardsUiState by flashCardsViewModel.uiState.collectAsStateWithLifecycle()
             FlashCardReviewScreen(
-                dueCards = flashCardsViewModel.dueCards,
+                dueCards = flashCardsUiState.dueCards,
                 onReview = { card, rating -> flashCardsViewModel.reviewCard(card, rating) },
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.AddNote.route) {
+            val pdfUiState by pdfAttachmentViewModel.uiState.collectAsStateWithLifecycle()
             NoteEditScreen(
                 note = null,
                 onSave = { note ->
@@ -56,10 +61,10 @@ fun AppNavHost(
                 },
                 onBack = { navController.popBackStack() },
                 onPdfPicked = { uri -> pdfAttachmentViewModel.extract(uri) },
-                extractedPdfText = pdfAttachmentViewModel.content,
+                extractedPdfText = pdfUiState.content,
                 onExtractedTextConsumed = { pdfAttachmentViewModel.clear() },
-                isExtractingPdf = pdfAttachmentViewModel.isGenerating,
-                pdfError = pdfAttachmentViewModel.error,
+                isExtractingPdf = pdfUiState.isGenerating,
+                pdfError = pdfUiState.error,
                 onPdfErrorShown = { pdfAttachmentViewModel.clearError() }
             )
         }
@@ -69,6 +74,7 @@ fun AppNavHost(
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getInt("noteId") ?: return@composable
             val note = noteViewModel.findById(noteId) ?: return@composable
+            val pdfUiState by pdfAttachmentViewModel.uiState.collectAsStateWithLifecycle()
             NoteEditScreen(
                 note = note,
                 onSave = { updated ->
@@ -77,10 +83,10 @@ fun AppNavHost(
                 },
                 onBack = { navController.popBackStack() },
                 onPdfPicked = { uri -> pdfAttachmentViewModel.extract(uri) },
-                extractedPdfText = pdfAttachmentViewModel.content,
+                extractedPdfText = pdfUiState.content,
                 onExtractedTextConsumed = { pdfAttachmentViewModel.clear() },
-                isExtractingPdf = pdfAttachmentViewModel.isGenerating,
-                pdfError = pdfAttachmentViewModel.error,
+                isExtractingPdf = pdfUiState.isGenerating,
+                pdfError = pdfUiState.error,
                 onPdfErrorShown = { pdfAttachmentViewModel.clearError() }
             )
         }
@@ -90,6 +96,7 @@ fun AppNavHost(
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getInt("noteId") ?: return@composable
             val note = noteViewModel.findById(noteId) ?: return@composable
+            val flashCardsUiState by flashCardsViewModel.uiState.collectAsStateWithLifecycle()
             NoteDetailScreen(
                 note = note,
                 onEditClick = { note -> navController.navigate(Screen.EditNote.createRoute(note.id)) },
@@ -101,8 +108,8 @@ fun AppNavHost(
                     }
                 },
                 onManageCards = { note -> navController.navigate(Screen.NoteCards.createRoute(note.id)) },
-                isGeneratingFlashcards = flashCardsViewModel.isGenerating,
-                flashcardError = flashCardsViewModel.generationError,
+                isGeneratingFlashcards = flashCardsUiState.isGenerating,
+                flashcardError = flashCardsUiState.generationError,
                 onFlashcardErrorShown = { flashCardsViewModel.clearGenerationError() }
             )
         }
@@ -116,8 +123,9 @@ fun AppNavHost(
             // The query happens here, when the cards screen opens — never on the note screen.
             LaunchedEffect(noteId) { flashCardsViewModel.loadCardsForNote(noteId) }
 
+            val flashCardsUiState by flashCardsViewModel.uiState.collectAsStateWithLifecycle()
             NoteCardsScreen(
-                cards = flashCardsViewModel.cardsForNote,
+                cards = flashCardsUiState.cardsForNote,
                 onAddCard = { front, back -> flashCardsViewModel.addCard(noteId, front, back) },
                 onUpdateCard = { card -> flashCardsViewModel.updateCard(card) },
                 onDeleteCard = { card -> flashCardsViewModel.deleteCard(card) },
@@ -125,7 +133,7 @@ fun AppNavHost(
                     flashCardsViewModel.clearNewCardIds()
                     navController.popBackStack()
                 },
-                newCardIds = flashCardsViewModel.newCardIds
+                newCardIds = flashCardsUiState.newCardIds
             )
         }
 
@@ -141,13 +149,14 @@ fun AppNavHost(
                 summaryViewModel.generate(note)
             }
 
+            val summaryUiState by summaryViewModel.uiState.collectAsStateWithLifecycle()
             SummaryReviewScreen(
-                summary = summaryViewModel.generatedSummary.orEmpty(),
-                isLoading = summaryViewModel.isGenerating,
-                errorMessage = summaryViewModel.error,
+                summary = summaryUiState.generatedSummary.orEmpty(),
+                isLoading = summaryUiState.isGenerating,
+                errorMessage = summaryUiState.error,
                 onAccept = {
                     // Saving the summary onto the note is a note mutation.
-                    summaryViewModel.generatedSummary?.let { summary ->
+                    summaryViewModel.uiState.value.generatedSummary?.let { summary ->
                         noteViewModel.updateNote(note.copy(summary = summary))
                     }
                     summaryViewModel.clear()

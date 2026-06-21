@@ -4,6 +4,8 @@ import com.example.studyplan.data.db.FlashCardDao
 import com.example.studyplan.data.db.toFlashCard
 import com.example.studyplan.data.db.toFlashCardEntity
 import com.example.studyplan.domain.flashcard.CardScheduleFactory
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 
 class FlashCardRepository(
@@ -11,8 +13,9 @@ class FlashCardRepository(
     private val scheduleFactory: CardScheduleFactory
 ) {
 
-    suspend fun getCardsForNote(noteId: Int): List<FlashCard> =
-        dao.getFlashCardsForNote(noteId).map { it.toFlashCard(scheduleFactory) }
+    /** Emits the note's cards and re-emits on every change to them. */
+    fun observeCardsForNote(noteId: Int): Flow<List<FlashCard>> =
+        dao.observeFlashCardsForNote(noteId).map { entities -> entities.map { it.toFlashCard(scheduleFactory) } }
 
     suspend fun getDueCards(today: LocalDate = LocalDate.now()): List<FlashCard> =
         dao.getDueFlashCards(today).map { it.toFlashCard(scheduleFactory) }

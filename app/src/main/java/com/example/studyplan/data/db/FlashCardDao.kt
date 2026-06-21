@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 @Dao
@@ -17,8 +18,9 @@ interface FlashCardDao {
     @Delete
     suspend fun deleteFlashCard(card: FlashCardEntity)
 
+    // Re-emits automatically whenever this note's cards change.
     @Query("SELECT * FROM flashcards WHERE noteId = :noteId ORDER BY id")
-    suspend fun getFlashCardsForNote(noteId: Int): List<FlashCardEntity>
+    fun observeFlashCardsForNote(noteId: Int): Flow<List<FlashCardEntity>>
 
     // A card is due when due <= today (overdue cards from past days are included).
     // The IS NULL branch only covers legacy rows written before due was always set.

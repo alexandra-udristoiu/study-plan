@@ -1,14 +1,23 @@
 package com.example.studyplan.ui
 
 import android.net.Uri
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyplan.data.pdf.PdfExtractionException
 import com.example.studyplan.data.pdf.PdfTextExtractor
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** Immutable snapshot of an in-progress PDF text extraction. */
+data class PdfAttachmentUiState(
+    val content: String? = null,
+    val isGenerating: Boolean = false,
+    // Non-null when the last extraction attempt failed; holds a message to show.
+    val error: String? = null,
+)
 
 /**
  * Owns reading a picked PDF into text. Mirrors [SummaryViewModel]: it only does
@@ -19,46 +28,31 @@ class PdfAttachmentViewModel(
     private val pdfTextExtractor: PdfTextExtractor,
 ) : ViewModel() {
 
-    var content by mutableStateOf<String?>(null)
-        private set
+    private val _uiState = MutableStateFlow(PdfAttachmentUiState())
+    val uiState: StateFlow<PdfAttachmentUiState> = _uiState.asStateFlow()
 
-    var isGenerating by mutableStateOf(false)
-        private set
-
-    // Non-null when the last generation attempt failed; holds a message to show.
-    var error by mutableStateOf<String?>(null)
-        private set
-
-    /**
-     * Reads the PDF at [uri] and holds the extracted text.
-     *
-     * Suggested shape: launch in viewModelScope, flip an "extracting" flag,
-     * call pdfTextExtractor.extractText(uri) inside try/catch(PdfExtractionException),
-     * store the result/error.
-     */
+    /** Reads the PDF at [uri] and holds the extracted text. */
     fun extract(uri: Uri) {
         viewModelScope.launch {
-            isGenerating = true
-            content = null
-            error = null
+            _uiState.update { it.copy(isGenerating = true, content = null, error = null) }
             try {
-                content = pdfTextExtractor.extractText(uri)
+                val text = pdfTextExtractor.extractText(uri)
+                _uiState.update { it.copy(content = text) }
             } catch (e: PdfExtractionException) {
-                error = e.message ?: "Failed to read the PDF."
+                _uiState.update { it.copy(error = e.message ?: "Failed to read the PDF.") }
             } finally {
-                isGenerating = false
+                _uiState.update { it.copy(isGenerating = false) }
             }
         }
     }
 
     /** Clears the last result so it isn't re-applied after the screen consumes it. */
     fun clear() {
-        content = null
-        error = null
+        _uiState.update { it.copy(content = null, error = null) }
     }
 
     /** Clears only the error, e.g. once the screen has shown it in a snackbar. */
     fun clearError() {
-        error = null
+        _uiState.update { it.copy(error = null) }
     }
 }
