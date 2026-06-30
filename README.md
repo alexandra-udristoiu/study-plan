@@ -1,5 +1,7 @@
 # StudyPlan — Android notes & spaced-repetition flashcard app
 
+[![CI](https://github.com/alexandra-udristoiu/study-plan/actions/workflows/ci.yml/badge.svg)](https://github.com/alexandra-udristoiu/study-plan/actions/workflows/ci.yml)
+
 Android study app for taking notes and reviewing them as
 flashcards with spaced repetition, so you revisit each card right before you'd
 forget it.
