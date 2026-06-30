@@ -59,10 +59,17 @@ notes, manual flashcards, and spaced-repetition review — works fully offline.
 
 ## Roadmap
 
-- [x] **AI flashcard generation** — auto-generate flashcards from a note.
-- [x] **PDF text import** — pick a PDF and pull its extracted text into a note.
-- [ ] Single immutable `UiState` exposed via `StateFlow` + `collectAsStateWithLifecycle()`.
-- [ ] Reactive data layer — Room `Flow` → repository → `stateIn`.
+The app is offline-first today. The next phase grows it into a multi-device,
+account-based experience backed by the companion server.
+
+- [ ] **User accounts** — sign-in so notes, flashcards, and review schedules belong
+  to a user rather than a single device.
+- [ ] **Cross-device synchronisation** — sync each account's notes and
+  spaced-repetition state through the backend, so review progress follows the user
+  from one device to another. Stays offline-first: local Room remains the source of
+  truth and reconciles with the server on reconnect.
+- [ ] **Deploy the companion backend** — host the summarisation, flashcard-generation,
+  PDF, and new account/sync endpoints instead of running them on localhost.
+- [ ] **Broaden test coverage** — extend ViewModel and repository unit tests and add
+  Compose UI tests (starting with the review flow) as the app grows.
 - [ ] Migrate manual DI to Hilt.
-- [ ] Unit tests for SM-2 scheduling; Compose UI tests for the review flow.
-- [ ] Wire up and deploy the summarisation backend.
