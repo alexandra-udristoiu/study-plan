@@ -25,6 +25,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # gradlew is committed from Windows without the Unix executable bit.
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
