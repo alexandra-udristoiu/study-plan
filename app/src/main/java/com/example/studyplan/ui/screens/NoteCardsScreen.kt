@@ -35,6 +35,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -148,7 +151,11 @@ private fun CardRow(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // Merge badge + front + back into one TalkBack stop, so the card reads as
+            // "New card, <front>, <back>" instead of stopping on a bare "NEW".
+            Column(modifier = Modifier
+                .weight(1f)
+                .semantics(mergeDescendants = true) {}) {
                 if (isNew) {
                     NewBadge()
                     Spacer(Modifier.height(6.dp))
@@ -192,7 +199,10 @@ private fun NewBadge() {
             text = "NEW",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            // Announce the clearer "New card" rather than the cryptic visual "NEW".
+            modifier = Modifier
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .clearAndSetSemantics { contentDescription = "New card" },
         )
     }
 }

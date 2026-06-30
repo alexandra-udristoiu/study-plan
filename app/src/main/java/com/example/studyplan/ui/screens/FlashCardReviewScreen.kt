@@ -29,6 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -88,7 +91,8 @@ fun FlashCardReviewScreen(
             revealed != null -> BackContent(
                 back = revealed.back,
                 onNext = { revealedCard = null },
-                modifier = modifier,
+                // Announce the revealed answer; TalkBack users rate without seeing it appear.
+                modifier = modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
 
             frontCard == null -> CenteredMessage("No flashcards due for review.", modifier)

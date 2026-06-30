@@ -44,6 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -190,7 +193,9 @@ fun NoteDetailScreen(
                 Column(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)),
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
+                        // Announce that the long AI operation is underway; it's otherwise silent.
+                        .semantics { liveRegion = LiveRegionMode.Polite },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
